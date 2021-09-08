@@ -78,7 +78,6 @@ class CoverageModel(tfrs.Model):
 
 model = CoverageModel(employee_model, coverage_model, task)
 model.compile(optimizer=tf.keras.optimizers.Adagrad(0.5))
-
 # Train for 3 epochs.
 model.fit(employees_dataset.batch(4), epochs=3)
 
@@ -89,7 +88,9 @@ index.index_from_dataset(
 
 # Get some recommendations.
 _, titles = index(np.array(["1"]))
-print(f"Top 3 recommendations for user 42: {titles[0, :3]}")
+print(f"Top 3 recommendations for user 1: {titles[0, :3]}")
+# model.build(employees_df.shape)
+# model.save("model")
 
 
 # DATA_URL = "D:/ratings.csv"
