@@ -24,12 +24,12 @@ enrollment_ds = tf.data.Dataset.from_tensor_slices(dict(enrollment_df))
 # )
 
 enrollment_ds = enrollment_ds.map(lambda x: {
-   "count": x["count"],
-   "gender": x["eemGender"],
-   "state": x["eemState"], 
-   "plan_name": x["PlanName"],
-   "date_of_birth": int(x["eemBirthDate"]),
-   "zip_code": x["eemZipCode"]
+  "count": x["count"],
+  "gender": x["eemGender"],
+  "state": x["eemState"], 
+  "plan_name": x["PlanName"],
+  "date_of_birth": int(x["eemBirthDate"]),
+  "zip_code": x["eemZipCode"]
 })
 print(enrollment_df)
 
@@ -67,8 +67,8 @@ class DCN(tfrs.Model):
       self._embeddings[feature_name] = tf.keras.Sequential(
           [tf.keras.layers.experimental.preprocessing.StringLookup(
               vocabulary=vocabulary, mask_token=None),
-           tf.keras.layers.Embedding(len(vocabulary) + 1,
-                                     self.embedding_dimension)
+          tf.keras.layers.Embedding(len(vocabulary) + 1,
+                                    self.embedding_dimension)
     ])
 
     # Compute embeddings for int features.
@@ -77,8 +77,8 @@ class DCN(tfrs.Model):
       self._embeddings[feature_name] = tf.keras.Sequential(
           [tf.keras.layers.experimental.preprocessing.IntegerLookup(
               vocabulary=vocabulary, mask_value=None),
-           tf.keras.layers.Embedding(len(vocabulary) + 1,
-                                     self.embedding_dimension)
+          tf.keras.layers.Embedding(len(vocabulary) + 1,
+                                    self.embedding_dimension)
     ])
 
     if use_cross_layer:
@@ -175,7 +175,7 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate))
 
 model.fit(cached_train, epochs=epochs, verbose=False)
 
-tf.saved_model.save(model, "export")
+model.save_weights("weights")
 
 # loaded = tf.saved_model.load("export")
 
