@@ -182,7 +182,7 @@ result = model({
 print(f"result: {result}")
 
 # tf.saved_model.save(model, "export")
-# model.save("export", save_format='tf')
+model.save("export", save_format='tf')
 model.save_weights("export")
 # tf.keras.models.save_model(model, "keras_export")
 # tfjs.converters.save_keras_model(model, "js-export")
