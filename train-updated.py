@@ -14,12 +14,21 @@ enrollment_df = enrollment_df.groupby(["PlanName", "eemGender", "eemState"]).siz
 
 enrollment_ds = tf.data.Dataset.from_tensor_slices(dict(enrollment_df))
 
-enrollment_ds = enrollment_ds.map(lambda x: {
-   "count": x["count"],
-   "eemGender": x["eemGender"],
-   "eemState": x["eemState"], 
-   "PlanName": x["PlanName"] 
-})
+# enrollment_ds = (
+#   tf.data.Dataset.from_tensor_slices(
+#     (
+#       enrollment_df[feature_names].values,
+#       enrollment_df['count'].values
+#     )
+#   )
+# )
+
+# enrollment_ds = enrollment_ds.map(lambda x: {
+#    "count": x["count"],
+#    "eemGender": x["eemGender"],
+#    "eemState": x["eemState"], 
+#    "PlanName": x["PlanName"] 
+# })
 print(enrollment_df)
 
 tf.random.set_seed(42)
@@ -93,8 +102,8 @@ class DCN(tfrs.Model):
     for feature_name in self._all_features:
       embedding_fn = self._embeddings[feature_name]
       embeddings.append(embedding_fn(features[feature_name]))
-
-    x = tf.concat(embeddings, axis=1)
+    x = tf.keras.layers.Concatenate(axis=1)(embeddings)
+    # x = tf.concat(embeddings, axis=1)
 
     # Build Cross Network
     if self._cross_layer is not None:
@@ -173,6 +182,7 @@ result = model({
 print(f"result: {result}")
 
 # tf.saved_model.save(model, "export")
-# model.save("export")
+# model.save("export", save_format='tf')
+model.save_weights("export")
 # tf.keras.models.save_model(model, "keras_export")
 # tfjs.converters.save_keras_model(model, "js-export")
