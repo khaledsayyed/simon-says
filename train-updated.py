@@ -9,8 +9,8 @@ import tensorflowjs as tfjs
 url = "train.csv"
 plans_df = pd.read_csv(url, usecols=["PlanName"], dtype=str).drop_duplicates()
 employees_df = pd.read_csv(url, dtype=str, usecols=["EmployeeId", "eemGender", "eemBirthDate", "eemState"]).drop_duplicates()
-enrollment_df = pd.read_csv(url, dtype=str, usecols=["eemState", "PlanName", "eemGender"])
-enrollment_df = enrollment_df.groupby(["PlanName", "eemGender", "eemState"]).size().reset_index(name="count")
+enrollment_df = pd.read_csv(url, dtype=str, usecols=["eemState", "PlanName", "eemGender", "eemBirthDate","eemZipCode"])
+enrollment_df = enrollment_df.groupby(["PlanName", "eemGender", "eemState", "eemZipCode", "eemBirthDate"]).size().reset_index(name="count")
 
 enrollment_ds = tf.data.Dataset.from_tensor_slices(dict(enrollment_df))
 
@@ -23,12 +23,14 @@ enrollment_ds = tf.data.Dataset.from_tensor_slices(dict(enrollment_df))
 #   )
 # )
 
-# enrollment_ds = enrollment_ds.map(lambda x: {
-#    "count": x["count"],
-#    "eemGender": x["eemGender"],
-#    "eemState": x["eemState"], 
-#    "PlanName": x["PlanName"] 
-# })
+enrollment_ds = enrollment_ds.map(lambda x: {
+   "count": x["count"],
+   "gender": x["eemGender"],
+   "state": x["eemState"], 
+   "plan_name": x["PlanName"],
+   "date_of_birth": int(x["eemBirthDate"]),
+   "zip_code": x["eemZipCode"]
+})
 print(enrollment_df)
 
 tf.random.set_seed(42)
@@ -38,7 +40,7 @@ shuffled = enrollment_ds.shuffle(100_000, seed=42, reshuffle_each_iteration=Fals
 train = shuffled.take(10000)
 test = shuffled.skip(10000).take(20_000)
 
-feature_names = ["PlanName", "eemGender", "eemState"]
+feature_names = ["plan_name", "gender", "state", "zip_code", "date_of_birth"]
 
 vocabularies = {}
 
@@ -53,8 +55,8 @@ class DCN(tfrs.Model):
 
     self.embedding_dimension = 32
 
-    str_features = ["PlanName", "eemState", "eemGender"]
-    int_features = []
+    str_features = ["plan_name", "state", "gender", "zip_code"]
+    int_features = ["date_of_birth"]
 
     self._all_features = str_features + int_features
     self._embeddings = {}
@@ -173,16 +175,48 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate))
 
 model.fit(cached_train, epochs=epochs, verbose=False)
 
-# # Get weight
-result = model({
-    "PlanName": np.array(["Solutions 500"]),
-    "eemGender": np.array(['M']),
-    "eemState": np.array(["WA"])
-})
-print(f"result: {result}")
+tf.saved_model.save(model, "export")
 
-# tf.saved_model.save(model, "export")
+# loaded = tf.saved_model.load("export")
+
+# # # Get weight
+# result = loaded({
+#     "PlanName": np.array(["Solutions 500"]),
+#     "eemGender": np.array(['M']),
+#     "eemState": np.array(["WA"])
+# })
+# print(f"result: {result}")
+
+
 # model.save("export", save_format='tf')
-model.save_weights("export")
+# model.save_weights("export")
 # tf.keras.models.save_model(model, "keras_export")
 # tfjs.converters.save_keras_model(model, "js-export")
+
+loaded = tf.saved_model.load("export")
+
+gender = "M"
+state = "WA"
+date_of_birth = 20160428
+zip_code = "2742"
+plan_names = ["Solutions 500", "Vision Plus", "Dental Plus", "Base Vision"]
+weight_by_plan = {}
+for plan_name in plan_names:
+  weight_by_plan[plan_name] = loaded({
+    "plan_name": np.array([plan_name]),
+    "gender": np.array([gender]),
+    "state": np.array([state]),
+    "date_of_birth": np.array([np.int32(date_of_birth)]),
+    "zip_code": np.array([zip_code])
+  })
+
+print("weight_by_plan:")
+print(weight_by_plan.items())
+array = sorted(weight_by_plan.items(), key=lambda x: x[1], reverse=True)
+print("recommended")
+recommended = array[0][0] 
+print(recommended)
+print("score")
+print(array[0][1])
+for recommended, score in sorted(weight_by_plan.items(), key=lambda x: x[1], reverse=True):
+  print(f"{recommended}: {score}")
